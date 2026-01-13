@@ -2,11 +2,9 @@ import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatCurrency } from '../utils';
 import { ShoppingCart, Minus, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const ProductModal = () => {
   const { selectedProduct, closeProductModal, addToCart } = useStore();
-  const navigate = useNavigate();
   
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [quantity, setQuantity] = useState(1);
@@ -21,8 +19,6 @@ const ProductModal = () => {
     }
     addToCart(selectedProduct, selectedSize, quantity);
     closeProductModal();
-    // Optional: Navigate to cart or just show success
-    // navigate('/cart'); 
     alert('Produto adicionado ao carrinho!');
   };
 
@@ -35,10 +31,6 @@ const ProductModal = () => {
     e.stopPropagation();
     setCurrentImageIndex(prev => (prev === 0 ? selectedProduct.images.length - 1 : prev - 1));
   };
-
-  // Reset state when product changes (conceptually, though component mounts/unmounts)
-  // We can use a key on the component in Layout or useEffect here if we kept it mounted.
-  // Since we render conditonally in Layout, state resets on close/open.
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true">

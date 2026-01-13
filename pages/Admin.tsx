@@ -3,8 +3,8 @@ import { useStore } from '../context/StoreContext';
 import { ADMIN_CREDENTIALS } from '../constants';
 import { Product, CATEGORIES, Category, AVAILABLE_SIZES } from '../types';
 import { formatCurrency, formatDate } from '../utils';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { LayoutDashboard, Package, Users, LogOut, Trash2, Search, ShoppingBag, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LayoutDashboard, Package, Users, Trash2, ShoppingBag, CheckCircle, XCircle, LogOut } from 'lucide-react';
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -13,7 +13,7 @@ const Admin = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'orders' | 'products' | 'clients'>('dashboard');
   
   // Store context
-  const { products, orders, addProduct, removeProduct, updateOrderStatus } = useStore();
+  const { products, orders, addProduct, removeProduct, updateOrderStatus, setCurrentView } = useStore();
 
   // --- DERIVED DATA ---
   const approvedOrders = useMemo(() => orders.filter(o => o.status === 'approved'), [orders]);
@@ -134,7 +134,6 @@ const Admin = () => {
     e.preventDefault();
     if (!newProduct.name || !newProduct.price) return;
     
-    // Process images
     const imgArray = newProduct.imagesStr ? newProduct.imagesStr.split(',').map(s => s.trim()).filter(s => s !== '') : ['https://via.placeholder.com/300'];
 
     const product: Product = {
@@ -155,7 +154,10 @@ const Admin = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center px-4">
+      <div className="min-h-screen bg-zinc-950 flex flex-col items-center justify-center px-4 relative">
+         <button onClick={() => setCurrentView('home')} className="absolute top-4 left-4 text-zinc-500 hover:text-white flex items-center gap-2">
+            <LogOut className="w-4 h-4 rotate-180" /> Voltar ao Site
+        </button>
         <div className="bg-zinc-900 p-8 rounded-xl border border-zinc-800 shadow-2xl w-full max-w-md">
           <h2 className="text-2xl font-black text-white mb-6 text-center uppercase tracking-widest">Painel Admin</h2>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -206,45 +208,47 @@ const Admin = () => {
 
   const renderOrders = () => (
     <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden animate-fade-in">
-        <table className="w-full text-left">
-            <thead className="bg-zinc-950 text-zinc-400 text-xs uppercase">
-                <tr>
-                    <th className="p-4">ID/Data</th>
-                    <th className="p-4">Cliente</th>
-                    <th className="p-4">Total</th>
-                    <th className="p-4">Status</th>
-                    <th className="p-4 text-right">Ações</th>
-                </tr>
-            </thead>
-            <tbody className="divide-y divide-zinc-800">
-                {orders.map(order => (
-                    <tr key={order.id} className="hover:bg-zinc-800/50">
-                        <td className="p-4">
-                            <span className="text-white text-sm block">{formatDate(order.date)}</span>
-                            <span className="text-zinc-500 text-xs">#{order.id.slice(-6)}</span>
-                        </td>
-                        <td className="p-4 text-white">
-                            <div className="font-bold">{order.customer.name}</div>
-                            <div className="text-xs text-zinc-400">{order.customer.phone}</div>
-                        </td>
-                        <td className="p-4 text-brand-accent font-bold">{formatCurrency(order.totalAmount)}</td>
-                        <td className="p-4">
-                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold uppercase ${order.status === 'approved' ? 'bg-green-900 text-green-400' : order.status === 'rejected' ? 'bg-red-900 text-red-400' : 'bg-yellow-900 text-yellow-400'}`}>
-                                {order.status}
-                            </span>
-                        </td>
-                        <td className="p-4 text-right space-x-2">
-                            {order.status === 'pending' && (
-                                <>
-                                    <button onClick={() => updateOrderStatus(order.id, 'approved')} className="text-green-500 hover:text-green-400"><CheckCircle /></button>
-                                    <button onClick={() => updateOrderStatus(order.id, 'rejected')} className="text-red-500 hover:text-red-400"><XCircle /></button>
-                                </>
-                            )}
-                        </td>
+        <div className="overflow-x-auto">
+            <table className="w-full text-left">
+                <thead className="bg-zinc-950 text-zinc-400 text-xs uppercase">
+                    <tr>
+                        <th className="p-4">ID/Data</th>
+                        <th className="p-4">Cliente</th>
+                        <th className="p-4">Total</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4 text-right">Ações</th>
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody className="divide-y divide-zinc-800">
+                    {orders.map(order => (
+                        <tr key={order.id} className="hover:bg-zinc-800/50">
+                            <td className="p-4">
+                                <span className="text-white text-sm block">{formatDate(order.date)}</span>
+                                <span className="text-zinc-500 text-xs">#{order.id.slice(-6)}</span>
+                            </td>
+                            <td className="p-4 text-white">
+                                <div className="font-bold">{order.customer.name}</div>
+                                <div className="text-xs text-zinc-400">{order.customer.phone}</div>
+                            </td>
+                            <td className="p-4 text-brand-accent font-bold">{formatCurrency(order.totalAmount)}</td>
+                            <td className="p-4">
+                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-bold uppercase ${order.status === 'approved' ? 'bg-green-900 text-green-400' : order.status === 'rejected' ? 'bg-red-900 text-red-400' : 'bg-yellow-900 text-yellow-400'}`}>
+                                    {order.status}
+                                </span>
+                            </td>
+                            <td className="p-4 text-right space-x-2">
+                                {order.status === 'pending' && (
+                                    <>
+                                        <button onClick={() => updateOrderStatus(order.id, 'approved')} className="text-green-500 hover:text-green-400"><CheckCircle /></button>
+                                        <button onClick={() => updateOrderStatus(order.id, 'rejected')} className="text-red-500 hover:text-red-400"><XCircle /></button>
+                                    </>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
     </div>
   );
 
@@ -304,39 +308,45 @@ const Admin = () => {
 
   const renderClients = () => (
       <div className="bg-zinc-900 rounded-lg border border-zinc-800 overflow-hidden animate-fade-in">
-          <table className="w-full text-left">
-                <thead className="bg-zinc-950 text-zinc-400 text-xs uppercase">
-                    <tr>
-                        <th className="p-4">Nome</th>
-                        <th className="p-4">Contato</th>
-                        <th className="p-4">Gasto (Aprovado)</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-800">
-                    {clients.map((c, idx) => (
-                        <tr key={idx} className="hover:bg-zinc-800/50">
-                            <td className="p-4 text-white">{c.name}</td>
-                            <td className="p-4 text-zinc-400 text-xs">
-                                <div>{c.email}</div>
-                                <div>{c.phone}</div>
-                            </td>
-                            <td className="p-4 text-brand-accent font-bold">{formatCurrency(c.totalSpent)}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+                    <thead className="bg-zinc-950 text-zinc-400 text-xs uppercase">
+                        <tr>
+                            <th className="p-4">Nome</th>
+                            <th className="p-4">Contato</th>
+                            <th className="p-4">Gasto (Aprovado)</th>
                         </tr>
-                    ))}
-                </tbody>
-          </table>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800">
+                        {clients.map((c, idx) => (
+                            <tr key={idx} className="hover:bg-zinc-800/50">
+                                <td className="p-4 text-white">{c.name}</td>
+                                <td className="p-4 text-zinc-400 text-xs">
+                                    <div>{c.email}</div>
+                                    <div>{c.phone}</div>
+                                </td>
+                                <td className="p-4 text-brand-accent font-bold">{formatCurrency(c.totalSpent)}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+            </table>
+          </div>
       </div>
   );
 
   return (
     <div className="min-h-screen bg-brand-black flex flex-col md:flex-row">
       <aside className="w-full md:w-64 bg-zinc-900 border-r border-zinc-800 flex-shrink-0">
-        <div className="p-6"><h1 className="text-2xl font-black text-white">ADMIN</h1></div>
+        <div className="p-6 flex justify-between items-center">
+            <h1 className="text-2xl font-black text-white">ADMIN</h1>
+            <button onClick={() => setCurrentView('home')} className="md:hidden text-zinc-400"><LogOut className="w-5 h-5" /></button>
+        </div>
         <nav className="space-y-1 px-3">
             <button onClick={() => setActiveTab('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded ${activeTab === 'dashboard' ? 'bg-brand-accent text-black' : 'text-zinc-400'}`}><LayoutDashboard className="w-4 h-4" /> Dashboard</button>
             <button onClick={() => setActiveTab('orders')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded ${activeTab === 'orders' ? 'bg-brand-accent text-black' : 'text-zinc-400'}`}><ShoppingBag className="w-4 h-4" /> Pedidos</button>
             <button onClick={() => setActiveTab('products')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded ${activeTab === 'products' ? 'bg-brand-accent text-black' : 'text-zinc-400'}`}><Package className="w-4 h-4" /> Produtos</button>
             <button onClick={() => setActiveTab('clients')} className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded ${activeTab === 'clients' ? 'bg-brand-accent text-black' : 'text-zinc-400'}`}><Users className="w-4 h-4" /> Clientes</button>
+            <button onClick={() => setCurrentView('home')} className="w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded text-red-400 hover:text-red-300 mt-8 border-t border-zinc-800"><LogOut className="w-4 h-4" /> Sair do Painel</button>
         </nav>
       </aside>
       <main className="flex-1 p-6 md:p-8 overflow-y-auto">

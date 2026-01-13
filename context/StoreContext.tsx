@@ -3,22 +3,44 @@ import { Product, CartItem, Order, OrderStatus, CustomerInfo } from '../types';
 import { INITIAL_PRODUCTS } from '../constants';
 import { calculateDiscount } from '../utils';
 
+type ViewType = 'home' | 'catalogo' | 'admin';
+
 interface StoreContextType {
   products: Product[];
   cart: CartItem[];
   orders: Order[];
-  selectedProduct: Product | null; // For Modal
+  
+  // Navigation State
+  currentView: ViewType;
+  setCurrentView: (view: ViewType) => void;
+  
+  // Modal States
+  selectedProduct: Product | null;
   openProductModal: (product: Product) => void;
   closeProductModal: () => void;
+  
+  isCartOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
+  
+  isCheckoutOpen: boolean;
+  openCheckout: () => void;
+  closeCheckout: () => void;
+
+  // Cart Actions
   addToCart: (product: Product, size: string, quantity: number) => void;
   removeFromCart: (productId: string, size: string) => void;
   updateQuantity: (productId: string, size: string, delta: number) => void;
   clearCart: () => void;
+  
+  // Data Actions
   addProduct: (product: Product) => void;
   removeProduct: (productId: string) => void;
   updateProduct: (product: Product) => void;
-  placeOrder: (customer: CustomerInfo) => string; // Returns Order ID
+  placeOrder: (customer: CustomerInfo) => string;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  
+  // Derived Data
   cartTotalItems: number;
   cartSubtotal: number;
   cartDiscountAmount: number;
@@ -29,6 +51,7 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
+  // Data State
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('gueto_products');
     return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
@@ -44,34 +67,37 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Modal State
+  // UI State
+  const [currentView, setCurrentView] = useState<ViewType>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem('gueto_products', JSON.stringify(products));
-  }, [products]);
+  // Persistence
+  useEffect(() => { localStorage.setItem('gueto_products', JSON.stringify(products)); }, [products]);
+  useEffect(() => { localStorage.setItem('gueto_orders', JSON.stringify(orders)); }, [orders]);
+  useEffect(() => { localStorage.setItem('gueto_cart', JSON.stringify(cart)); }, [cart]);
 
-  useEffect(() => {
-    localStorage.setItem('gueto_orders', JSON.stringify(orders));
-  }, [orders]);
-
-  useEffect(() => {
-    localStorage.setItem('gueto_cart', JSON.stringify(cart));
-  }, [cart]);
-
-  // Cart Calculations
+  // Derived Calculations
   const cartTotalItems = cart.reduce((acc, item) => acc + item.quantity, 0);
   const cartSubtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
   const cartDiscountPercent = calculateDiscount(cartTotalItems);
   const cartDiscountAmount = cartSubtotal * cartDiscountPercent;
   const cartFinalTotal = cartSubtotal - cartDiscountAmount;
 
+  // Modal Handlers
   const openProductModal = (product: Product) => setSelectedProduct(product);
   const closeProductModal = () => setSelectedProduct(null);
+  
+  const openCart = () => { setIsCartOpen(true); setIsCheckoutOpen(false); };
+  const closeCart = () => setIsCartOpen(false);
+  
+  const openCheckout = () => { setIsCartOpen(false); setIsCheckoutOpen(true); };
+  const closeCheckout = () => setIsCheckoutOpen(false);
 
+  // Cart Logic
   const addToCart = (product: Product, size: string, quantity: number) => {
     setCart(prev => {
-      // Find item with same ID AND Size
       const existing = prev.find(p => p.id === product.id && p.selectedSize === size);
       if (existing) {
         return prev.map(p => 
@@ -102,20 +128,11 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
 
   const clearCart = () => setCart([]);
 
-  // Product Actions
-  const addProduct = (product: Product) => {
-    setProducts(prev => [...prev, product]);
-  };
+  // Data Logic
+  const addProduct = (product: Product) => setProducts(prev => [...prev, product]);
+  const removeProduct = (productId: string) => setProducts(prev => prev.filter(p => p.id !== productId));
+  const updateProduct = (updatedProduct: Product) => setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
 
-  const removeProduct = (productId: string) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
-  };
-
-  const updateProduct = (updatedProduct: Product) => {
-    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-  };
-
-  // Order Actions
   const placeOrder = (customer: CustomerInfo): string => {
     const newOrder: Order = {
       id: Date.now().toString(),
@@ -126,9 +143,8 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
       discountAmount: cartDiscountAmount,
       discountPercent: cartDiscountPercent,
       date: new Date().toISOString(),
-      status: 'pending' // ALWAYS PENDING
+      status: 'pending'
     };
-
     setOrders(prev => [newOrder, ...prev]);
     clearCart();
     return newOrder.id;
@@ -140,26 +156,15 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
 
   return (
     <StoreContext.Provider value={{
-      products,
-      cart,
-      orders,
-      selectedProduct,
-      openProductModal,
-      closeProductModal,
-      addToCart,
-      removeFromCart,
-      updateQuantity,
-      clearCart,
-      addProduct,
-      removeProduct,
-      updateProduct,
-      placeOrder,
-      updateOrderStatus,
-      cartTotalItems,
-      cartSubtotal,
-      cartDiscountAmount,
-      cartFinalTotal,
-      cartDiscountPercent
+      products, cart, orders,
+      currentView, setCurrentView,
+      selectedProduct, openProductModal, closeProductModal,
+      isCartOpen, openCart, closeCart,
+      isCheckoutOpen, openCheckout, closeCheckout,
+      addToCart, removeFromCart, updateQuantity, clearCart,
+      addProduct, removeProduct, updateProduct,
+      placeOrder, updateOrderStatus,
+      cartTotalItems, cartSubtotal, cartDiscountAmount, cartFinalTotal, cartDiscountPercent
     }}>
       {children}
     </StoreContext.Provider>
