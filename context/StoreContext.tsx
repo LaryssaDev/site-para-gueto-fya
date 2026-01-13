@@ -28,9 +28,10 @@ interface StoreContextType {
   closeCheckout: () => void;
 
   // Cart Actions
-  addToCart: (product: Product, size: string, quantity: number) => void;
-  removeFromCart: (productId: string, size: string) => void;
-  updateQuantity: (productId: string, size: string, delta: number) => void;
+  addToCart: (product: Product) => void;
+  removeFromCart: (cartItemId: string) => void;
+  updateQuantity: (cartItemId: string, delta: number) => void;
+  updateItemSize: (cartItemId: string, newSize: string) => void;
   clearCart: () => void;
   
   // Data Actions
@@ -96,34 +97,40 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
   const closeCheckout = () => setIsCheckoutOpen(false);
 
   // Cart Logic
-  const addToCart = (product: Product, size: string, quantity: number) => {
+  const addToCart = (product: Product) => {
     setCart(prev => {
-      const existing = prev.find(p => p.id === product.id && p.selectedSize === size);
-      if (existing) {
-        return prev.map(p => 
-          (p.id === product.id && p.selectedSize === size) 
-          ? { ...p, quantity: p.quantity + quantity } 
-          : p
-        );
-      }
-      return [...prev, { ...product, selectedSize: size, quantity: quantity }];
+      // Logic change: Simply add a new line item. Size will be selected in Cart.
+      const newItem: CartItem = {
+        ...product,
+        cartItemId: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        selectedSize: '', // Pending size selection
+        quantity: 1
+      };
+      return [...prev, newItem];
     });
+    setIsCartOpen(true); // Automatically open cart to prompt size selection
   };
 
-  const removeFromCart = (productId: string, size: string) => {
-    setCart(prev => prev.filter(p => !(p.id === productId && p.selectedSize === size)));
+  const removeFromCart = (cartItemId: string) => {
+    setCart(prev => prev.filter(p => p.cartItemId !== cartItemId));
   };
 
-  const updateQuantity = (productId: string, size: string, delta: number) => {
+  const updateQuantity = (cartItemId: string, delta: number) => {
     setCart(prev => {
       return prev.map(item => {
-        if (item.id === productId && item.selectedSize === size) {
+        if (item.cartItemId === cartItemId) {
           const newQty = Math.max(1, item.quantity + delta);
           return { ...item, quantity: newQty };
         }
         return item;
       });
     });
+  };
+
+  const updateItemSize = (cartItemId: string, newSize: string) => {
+    setCart(prev => prev.map(item => 
+        item.cartItemId === cartItemId ? { ...item, selectedSize: newSize } : item
+    ));
   };
 
   const clearCart = () => setCart([]);
@@ -161,7 +168,7 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
       selectedProduct, openProductModal, closeProductModal,
       isCartOpen, openCart, closeCart,
       isCheckoutOpen, openCheckout, closeCheckout,
-      addToCart, removeFromCart, updateQuantity, clearCart,
+      addToCart, removeFromCart, updateQuantity, updateItemSize, clearCart,
       addProduct, removeProduct, updateProduct,
       placeOrder, updateOrderStatus,
       cartTotalItems, cartSubtotal, cartDiscountAmount, cartFinalTotal, cartDiscountPercent

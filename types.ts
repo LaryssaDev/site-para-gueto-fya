@@ -14,8 +14,9 @@ export interface Product {
 }
 
 export interface CartItem extends Product {
+  cartItemId: string; // Unique ID for this specific line item in the cart
   quantity: number;
-  selectedSize: string;
+  selectedSize: string; // Can be empty initially
 }
 
 export interface CustomerInfo {

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useStore } from '../context/StoreContext';
 import { formatCurrency } from '../utils';
-import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, X } from 'lucide-react';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowRight, X, AlertTriangle } from 'lucide-react';
 
 const CartModal = () => {
   const { 
@@ -10,6 +10,7 @@ const CartModal = () => {
     openCheckout,
     cart, 
     updateQuantity, 
+    updateItemSize,
     removeFromCart, 
     cartTotalItems, 
     cartSubtotal, 
@@ -17,6 +18,10 @@ const CartModal = () => {
     cartDiscountAmount, 
     cartFinalTotal 
   } = useStore();
+
+  const allSizesSelected = useMemo(() => {
+    return cart.every(item => item.selectedSize && item.selectedSize !== '');
+  }, [cart]);
 
   if (!isCartOpen) return null;
 
@@ -51,27 +56,50 @@ const CartModal = () => {
                 </div>
             ) : (
                 cart.map((item) => (
-                    <div key={`${item.id}-${item.selectedSize}`} className="bg-zinc-800/50 rounded-lg p-3 flex gap-3 border border-zinc-800">
-                        <div className="w-20 h-20 bg-zinc-900 rounded overflow-hidden flex-shrink-0">
-                            <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
-                        </div>
-                        <div className="flex-1 flex flex-col justify-between">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h4 className="text-white font-bold text-sm line-clamp-1">{item.name}</h4>
-                                    <p className="text-xs text-zinc-500">{item.selectedSize}</p>
-                                </div>
-                                <button onClick={() => removeFromCart(item.id, item.selectedSize)} className="text-zinc-600 hover:text-red-500">
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
+                    <div key={item.cartItemId} className={`bg-zinc-800/50 rounded-lg p-3 border ${!item.selectedSize ? 'border-red-500/50' : 'border-zinc-800'} transition-colors`}>
+                        <div className="flex gap-3 mb-3">
+                            <div className="w-20 h-20 bg-zinc-900 rounded overflow-hidden flex-shrink-0">
+                                <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
                             </div>
-                            <div className="flex justify-between items-center mt-2">
-                                <div className="flex items-center bg-zinc-900 rounded border border-zinc-700">
-                                    <button onClick={() => updateQuantity(item.id, item.selectedSize, -1)} disabled={item.quantity <= 1} className="p-1 px-2 text-zinc-400 hover:text-white"><Minus className="w-3 h-3" /></button>
-                                    <span className="px-2 text-white text-xs font-mono">{item.quantity}</span>
-                                    <button onClick={() => updateQuantity(item.id, item.selectedSize, 1)} className="p-1 px-2 text-zinc-400 hover:text-white"><Plus className="w-3 h-3" /></button>
+                            <div className="flex-1 flex flex-col justify-between">
+                                <div className="flex justify-between items-start">
+                                    <h4 className="text-white font-bold text-sm line-clamp-2">{item.name}</h4>
+                                    <button onClick={() => removeFromCart(item.cartItemId)} className="text-zinc-600 hover:text-red-500">
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
                                 </div>
-                                <p className="text-brand-accent font-bold text-sm">{formatCurrency(item.price * item.quantity)}</p>
+                                <div className="flex justify-between items-center mt-2">
+                                    <div className="flex items-center bg-zinc-900 rounded border border-zinc-700">
+                                        <button onClick={() => updateQuantity(item.cartItemId, -1)} disabled={item.quantity <= 1} className="p-1 px-2 text-zinc-400 hover:text-white"><Minus className="w-3 h-3" /></button>
+                                        <span className="px-2 text-white text-xs font-mono">{item.quantity}</span>
+                                        <button onClick={() => updateQuantity(item.cartItemId, 1)} className="p-1 px-2 text-zinc-400 hover:text-white"><Plus className="w-3 h-3" /></button>
+                                    </div>
+                                    <p className="text-brand-accent font-bold text-sm">{formatCurrency(item.price * item.quantity)}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Size Selection inside Cart */}
+                        <div className="pt-2 border-t border-zinc-700/50">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className={`text-xs font-bold uppercase ${!item.selectedSize ? 'text-red-400 animate-pulse' : 'text-zinc-500'}`}>
+                                    {!item.selectedSize ? 'Selecione o Tamanho:' : 'Tamanho Selecionado:'}
+                                </span>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                {item.sizes.map(size => (
+                                    <button
+                                        key={size}
+                                        onClick={() => updateItemSize(item.cartItemId, size)}
+                                        className={`text-xs font-bold px-2 py-1 rounded border transition-colors ${
+                                            item.selectedSize === size
+                                            ? 'bg-brand-accent text-black border-brand-accent'
+                                            : 'bg-zinc-900 text-zinc-400 border-zinc-700 hover:border-zinc-500 hover:text-white'
+                                        }`}
+                                    >
+                                        {size}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -82,6 +110,13 @@ const CartModal = () => {
         {/* Footer */}
         {cart.length > 0 && (
             <div className="p-6 bg-zinc-950 border-t border-zinc-800">
+                {!allSizesSelected && (
+                    <div className="mb-4 bg-red-900/20 border border-red-900/50 rounded p-3 flex items-start gap-2 text-red-200 text-xs">
+                        <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                        <p>Por favor, selecione o tamanho de todos os itens antes de finalizar.</p>
+                    </div>
+                )}
+                
                 <div className="space-y-2 mb-4 text-sm">
                     <div className="flex justify-between text-zinc-400">
                         <span>Subtotal</span>
@@ -100,7 +135,12 @@ const CartModal = () => {
                 </div>
                 <button 
                     onClick={openCheckout}
-                    className="w-full bg-brand-accent hover:bg-yellow-400 text-black font-bold py-4 rounded-lg flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg transition-transform active:scale-95"
+                    disabled={!allSizesSelected}
+                    className={`w-full font-bold py-4 rounded-lg flex items-center justify-center gap-2 uppercase tracking-widest shadow-lg transition-all ${
+                        allSizesSelected 
+                        ? 'bg-brand-accent hover:bg-yellow-400 text-black active:scale-95' 
+                        : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                    }`}
                 >
                     Finalizar Pedido <ArrowRight className="w-5 h-5" />
                 </button>
