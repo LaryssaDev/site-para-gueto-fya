@@ -5,7 +5,6 @@ import Layout from './components/Layout';
 import Home from './pages/Home';
 import Cart from './pages/Cart';
 import Admin from './pages/Admin';
-import ProductDetails from './pages/ProductDetails';
 import Catalogo from './pages/Catalogo';
 import Checkout from './pages/Checkout';
 import WhatsAppFloat from './components/WhatsAppFloat';
@@ -18,7 +17,6 @@ const App = () => {
           <Route path="/" element={<Layout />}>
             <Route index element={<Home />} />
             <Route path="cart" element={<Cart />} />
-            <Route path="product/:id" element={<ProductDetails />} />
             <Route path="catalogo" element={<Catalogo />} />
             <Route path="checkout" element={<Checkout />} />
           </Route>

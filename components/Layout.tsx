@@ -1,6 +1,7 @@
 import React from 'react';
 import Navbar from './Navbar';
 import { Outlet, useLocation } from 'react-router-dom';
+import ProductModal from './ProductModal';
 
 const Layout = () => {
   const location = useLocation();
@@ -9,6 +10,10 @@ const Layout = () => {
   return (
     <div className="flex flex-col min-h-screen">
       {!isAdmin && <Navbar />}
+      
+      {/* Product Modal Overlay - Available Globally */}
+      <ProductModal />
+
       <main className="flex-grow">
         <Outlet />
       </main>

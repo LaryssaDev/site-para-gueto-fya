@@ -2,15 +2,20 @@ import React from 'react';
 import { Product } from '../types';
 import { Eye } from 'lucide-react';
 import { formatCurrency } from '../utils';
-import { Link } from 'react-router-dom';
+import { useStore } from '../context/StoreContext';
 
 interface ProductCardProps {
   product: Product;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
+  const { openProductModal } = useStore();
+
   return (
-    <Link to={`/product/${product.id}`} className="group bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 hover:border-brand-accent transition-all duration-300 shadow-lg flex flex-col h-full cursor-pointer">
+    <div 
+        onClick={() => openProductModal(product)}
+        className="group bg-zinc-900 rounded-lg overflow-hidden border border-zinc-800 hover:border-brand-accent transition-all duration-300 shadow-lg flex flex-col h-full cursor-pointer"
+    >
       <div className="relative aspect-square overflow-hidden bg-zinc-800">
         <img 
           src={product.images[0]} 
@@ -20,7 +25,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center">
             <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
                 <span className="bg-brand-accent text-black font-bold px-6 py-2 rounded-full flex items-center gap-2">
-                    <Eye className="w-4 h-4" /> Ver Detalhes
+                    <Eye className="w-4 h-4" /> Espiar
                 </span>
             </div>
         </div>
@@ -53,7 +58,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           )}
         </div>
       </div>
-    </Link>
+    </div>
   );
 };
 

@@ -1,10 +1,9 @@
 import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { Link } from 'react-router-dom';
 import { formatCurrency } from '../utils';
 
 const Catalogo = () => {
-  const { products } = useStore();
+  const { products, openProductModal } = useStore();
 
   return (
     <div className="min-h-screen bg-brand-black py-10 px-4 sm:px-6 lg:px-8">
@@ -13,7 +12,11 @@ const Catalogo = () => {
         
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {products.map(product => (
-                <Link key={product.id} to={`/product/${product.id}`} className="block group relative">
+                <div 
+                    key={product.id} 
+                    onClick={() => openProductModal(product)}
+                    className="block group relative cursor-pointer"
+                >
                     <div className="aspect-[3/4] overflow-hidden rounded-lg bg-zinc-900">
                         <img 
                             src={product.images[0]} 
@@ -25,7 +28,7 @@ const Catalogo = () => {
                             <p className="text-brand-accent">{formatCurrency(product.price)}</p>
                         </div>
                     </div>
-                </Link>
+                </div>
             ))}
         </div>
       </div>

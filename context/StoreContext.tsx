@@ -7,6 +7,9 @@ interface StoreContextType {
   products: Product[];
   cart: CartItem[];
   orders: Order[];
+  selectedProduct: Product | null; // For Modal
+  openProductModal: (product: Product) => void;
+  closeProductModal: () => void;
   addToCart: (product: Product, size: string, quantity: number) => void;
   removeFromCart: (productId: string, size: string) => void;
   updateQuantity: (productId: string, size: string, delta: number) => void;
@@ -41,6 +44,9 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Modal State
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
   useEffect(() => {
     localStorage.setItem('gueto_products', JSON.stringify(products));
   }, [products]);
@@ -59,6 +65,9 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
   const cartDiscountPercent = calculateDiscount(cartTotalItems);
   const cartDiscountAmount = cartSubtotal * cartDiscountPercent;
   const cartFinalTotal = cartSubtotal - cartDiscountAmount;
+
+  const openProductModal = (product: Product) => setSelectedProduct(product);
+  const closeProductModal = () => setSelectedProduct(null);
 
   const addToCart = (product: Product, size: string, quantity: number) => {
     setCart(prev => {
@@ -134,6 +143,9 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
       products,
       cart,
       orders,
+      selectedProduct,
+      openProductModal,
+      closeProductModal,
       addToCart,
       removeFromCart,
       updateQuantity,
