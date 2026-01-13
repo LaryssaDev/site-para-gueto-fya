@@ -10,15 +10,23 @@ export interface Product {
   images: string[];
   category: Category;
   stock: number;
+  sizes: string[]; // e.g. ['P', 'M', 'G']
 }
 
 export interface CartItem extends Product {
   quantity: number;
+  selectedSize: string;
+}
+
+export interface CustomerInfo {
+  name: string;
+  phone: string;
+  email: string;
 }
 
 export interface Order {
   id: string;
-  customerName: string;
+  customer: CustomerInfo;
   items: CartItem[];
   totalAmount: number; // Final value after discount
   subtotal: number;
@@ -37,3 +45,5 @@ export interface SalesData {
 export const CATEGORIES: Category[] = [
   'Camisetas', 'Bonés', 'Moletons', 'Bermudas', 'Calças', 'Toucas', 'Cuecas', 'Bags'
 ];
+
+export const AVAILABLE_SIZES = ['P', 'M', 'G', 'GG', 'XG', 'U'];

@@ -1,79 +1,21 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useStore } from '../context/StoreContext';
-import { formatCurrency, generateWhatsAppMessage } from '../utils';
-import { Trash2, Minus, Plus, MessageCircle, ShoppingBag, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { formatCurrency } from '../utils';
+import { Trash2, Minus, Plus, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Cart = () => {
+  const navigate = useNavigate();
   const { 
     cart, 
     updateQuantity, 
     removeFromCart, 
-    placeOrder,
     cartTotalItems, 
     cartSubtotal, 
     cartDiscountPercent, 
     cartDiscountAmount, 
     cartFinalTotal 
   } = useStore();
-
-  const [customerName, setCustomerName] = useState('');
-  const [error, setError] = useState('');
-
-  const handleWhatsAppCheckout = () => {
-    if (!customerName.trim()) {
-      setError('Por favor, informe seu nome para identificarmos o pedido.');
-      return;
-    }
-
-    // 1. Create Pending Order in System
-    const orderId = placeOrder(customerName);
-
-    // 2. Generate Message with correct Data
-    const phoneNumber = "11977809124"; 
-    const message = generateWhatsAppMessage(
-      orderId,
-      customerName,
-      cart, // Note: cart is cleared in Store, but we pass the current items before clear happens? 
-            // Ideally placeOrder clears it. We need to capture state before. 
-            // Actually, placeOrder clears it, so we need to use a local ref or pass the cart *before* calling placeOrder? 
-            // In the implementation below, we use the `cart` from render scope which holds the items *before* the state update rerender.
-      cartDiscountPercent, 
-      cartDiscountAmount, 
-      cartFinalTotal
-    );
-
-    // 3. Redirect
-    const link = `https://api.whatsapp.com/send/?phone=${phoneNumber}&text=${message}&type=phone_number&app_absent=0`;
-    window.location.href = link;
-  };
-
-  // We need to capture the current cart items because placeOrder will clear them from context
-  const currentCartItems = [...cart];
-
-  const safeHandleCheckout = () => {
-     if (!customerName.trim()) {
-      setError('Por favor, digite seu nome.');
-      return;
-    }
-
-    // Capture values before clearing state
-    const orderId = placeOrder(customerName);
-    
-    // Generate link
-    const phoneNumber = "11977809124"; 
-    const message = generateWhatsAppMessage(
-      orderId,
-      customerName,
-      currentCartItems, 
-      cartDiscountPercent, 
-      cartDiscountAmount, 
-      cartFinalTotal
-    );
-
-    const link = `https://api.whatsapp.com/send/?phone=${phoneNumber}&text=${message}&type=phone_number&app_absent=0`;
-    window.location.href = link;
-  }
 
   if (cart.length === 0) {
     return (
@@ -100,8 +42,8 @@ const Cart = () => {
           
           {/* Cart Items List */}
           <div className="lg:col-span-2 space-y-4">
-            {cart.map(item => (
-              <div key={item.id} className="bg-zinc-900 rounded-lg p-4 flex gap-4 border border-zinc-800 shadow-md">
+            {cart.map((item, idx) => (
+              <div key={`${item.id}-${item.selectedSize}`} className="bg-zinc-900 rounded-lg p-4 flex gap-4 border border-zinc-800 shadow-md">
                 <div className="w-24 h-24 bg-zinc-800 rounded-md overflow-hidden flex-shrink-0">
                   <img src={item.images[0]} alt={item.name} className="w-full h-full object-cover" />
                 </div>
@@ -111,8 +53,11 @@ const Cart = () => {
                     <div>
                         <h3 className="text-white font-bold uppercase text-sm md:text-base">{item.name}</h3>
                         <p className="text-zinc-500 text-xs">{item.category}</p>
+                        <div className="mt-1 inline-block bg-zinc-800 text-zinc-300 text-xs px-2 py-0.5 rounded border border-zinc-700">
+                            Tamanho: {item.selectedSize}
+                        </div>
                     </div>
-                    <button onClick={() => removeFromCart(item.id)} className="text-zinc-500 hover:text-red-500 transition-colors">
+                    <button onClick={() => removeFromCart(item.id, item.selectedSize)} className="text-zinc-500 hover:text-red-500 transition-colors">
                       <Trash2 className="h-5 w-5" />
                     </button>
                   </div>
@@ -120,7 +65,7 @@ const Cart = () => {
                   <div className="flex justify-between items-center mt-4">
                     <div className="flex items-center bg-zinc-950 rounded border border-zinc-800">
                       <button 
-                        onClick={() => updateQuantity(item.id, -1)} 
+                        onClick={() => updateQuantity(item.id, item.selectedSize, -1)} 
                         className="p-1 px-2 text-zinc-400 hover:text-white"
                         disabled={item.quantity <= 1}
                       >
@@ -128,7 +73,7 @@ const Cart = () => {
                       </button>
                       <span className="px-2 text-white font-mono">{item.quantity}</span>
                       <button 
-                         onClick={() => updateQuantity(item.id, 1)}
+                         onClick={() => updateQuantity(item.id, item.selectedSize, 1)}
                          className="p-1 px-2 text-zinc-400 hover:text-white"
                       >
                         <Plus className="h-4 w-4" />
@@ -174,39 +119,17 @@ const Cart = () => {
                 </div>
               </div>
 
-              {/* Identification Input */}
-              <div className="mb-6">
-                <label htmlFor="name" className="block text-xs uppercase text-zinc-500 font-bold mb-2">Seu Nome Completo</label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-                  <input 
-                    type="text" 
-                    id="name"
-                    value={customerName}
-                    onChange={(e) => {
-                      setCustomerName(e.target.value);
-                      setError('');
-                    }}
-                    placeholder="Digite seu nome..."
-                    className="w-full bg-zinc-950 border border-zinc-700 rounded-lg py-3 pl-10 pr-4 text-white focus:border-brand-accent outline-none focus:ring-1 focus:ring-brand-accent transition-all"
-                  />
-                </div>
-                {error && <p className="text-red-500 text-xs mt-1 font-bold">{error}</p>}
-              </div>
-
               <div className="space-y-3">
                 <button 
-                  onClick={safeHandleCheckout}
-                  className="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg"
+                  onClick={() => navigate('/checkout')}
+                  className="w-full bg-brand-accent hover:bg-yellow-400 text-black font-bold py-4 rounded-lg flex items-center justify-center gap-2 transition-all hover:scale-[1.02] shadow-lg uppercase tracking-widest"
                 >
-                  <MessageCircle className="h-5 w-5" />
-                  Finalizar via WhatsApp
+                  Finalizar Pedido <ArrowRight className="h-5 w-5" />
                 </button>
+                <Link to="/" className="block text-center text-zinc-500 text-sm hover:text-white mt-4">
+                    Continuar Comprando
+                </Link>
               </div>
-
-              <p className="mt-4 text-xs text-center text-zinc-500 leading-relaxed">
-                Ao finalizar, você será redirecionado para o WhatsApp com a nota do pedido. Aguarde a confirmação de disponibilidade pelo atendente.
-              </p>
             </div>
           </div>
 

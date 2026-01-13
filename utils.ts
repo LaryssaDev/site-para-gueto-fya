@@ -1,4 +1,4 @@
-import { CartItem } from './types';
+import { CartItem, CustomerInfo } from './types';
 
 export const formatCurrency = (value: number) => {
   return new Intl.NumberFormat('pt-BR', {
@@ -16,7 +16,7 @@ export const calculateDiscount = (totalItems: number) => {
 
 export const generateWhatsAppMessage = (
   orderId: string,
-  customerName: string,
+  customer: CustomerInfo,
   items: CartItem[], 
   discountPercent: number, 
   totalSavings: number, 
@@ -25,23 +25,26 @@ export const generateWhatsAppMessage = (
   const totalItems = items.reduce((acc, item) => acc + item.quantity, 0);
   
   let itemsList = items.map(item => 
-    `- ${item.name} (${item.category}) — ${item.quantity}x — ${formatCurrency(item.price)}`
+    `- ${item.name} | Tam: ${item.selectedSize} | ${item.quantity}x | ${formatCurrency(item.price)}`
   ).join('\n');
 
   const message = `
-*PEDIDO NOVO - GUETO FYA* 👕🔥
-🆔 *ID do Pedido:* ${orderId}
-👤 *Cliente:* ${customerName}
+Olá! Gostaria de finalizar meu pedido na *GUETO FYA* 🔥
+
+👤 *Nome:* ${customer.name}
+📞 *Telefone:* ${customer.phone}
+📧 *Email:* ${customer.email}
 
 🛍️ *Itens:*
 ${itemsList}
 
-📦 Total de peças: ${totalItems}
-💸 Desconto aplicado: ${(discountPercent * 100).toFixed(0)}%
-💰 Valor economizado: ${formatCurrency(totalSavings)}
-💳 *Valor Final:* ${formatCurrency(finalTotal)}
+📦 *Total de peças:* ${totalItems}
+💸 *Desconto:* ${(discountPercent * 100).toFixed(0)}%
+💰 *Valor final:* ${formatCurrency(finalTotal)}
 
-⚠️ *Status:* PENDENTE (Aguardando aprovação)
+🆔 ID: ${orderId}
+🕒 *Status do pedido:* PENDENTE
+Aguardo confirmação. Obrigado!
 `.trim();
 
   return encodeURIComponent(message);

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, PropsWithChildren } from 'react';
-import { Product, CartItem, Order, OrderStatus } from '../types';
+import { Product, CartItem, Order, OrderStatus, CustomerInfo } from '../types';
 import { INITIAL_PRODUCTS } from '../constants';
 import { calculateDiscount } from '../utils';
 
@@ -7,14 +7,14 @@ interface StoreContextType {
   products: Product[];
   cart: CartItem[];
   orders: Order[];
-  addToCart: (product: Product) => void;
-  removeFromCart: (productId: string) => void;
-  updateQuantity: (productId: string, delta: number) => void;
+  addToCart: (product: Product, size: string, quantity: number) => void;
+  removeFromCart: (productId: string, size: string) => void;
+  updateQuantity: (productId: string, size: string, delta: number) => void;
   clearCart: () => void;
   addProduct: (product: Product) => void;
   removeProduct: (productId: string) => void;
   updateProduct: (product: Product) => void;
-  placeOrder: (customerName: string) => string; // Returns Order ID
+  placeOrder: (customer: CustomerInfo) => string; // Returns Order ID
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   cartTotalItems: number;
   cartSubtotal: number;
@@ -26,7 +26,6 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
-  // Initialize state from LocalStorage or Constants
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('gueto_products');
     return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
@@ -42,7 +41,6 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Persist changes
   useEffect(() => {
     localStorage.setItem('gueto_products', JSON.stringify(products));
   }, [products]);
@@ -62,24 +60,29 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
   const cartDiscountAmount = cartSubtotal * cartDiscountPercent;
   const cartFinalTotal = cartSubtotal - cartDiscountAmount;
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product, size: string, quantity: number) => {
     setCart(prev => {
-      const existing = prev.find(p => p.id === product.id);
+      // Find item with same ID AND Size
+      const existing = prev.find(p => p.id === product.id && p.selectedSize === size);
       if (existing) {
-        return prev.map(p => p.id === product.id ? { ...p, quantity: p.quantity + 1 } : p);
+        return prev.map(p => 
+          (p.id === product.id && p.selectedSize === size) 
+          ? { ...p, quantity: p.quantity + quantity } 
+          : p
+        );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, selectedSize: size, quantity: quantity }];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(p => p.id !== productId));
+  const removeFromCart = (productId: string, size: string) => {
+    setCart(prev => prev.filter(p => !(p.id === productId && p.selectedSize === size)));
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const updateQuantity = (productId: string, size: string, delta: number) => {
     setCart(prev => {
       return prev.map(item => {
-        if (item.id === productId) {
+        if (item.id === productId && item.selectedSize === size) {
           const newQty = Math.max(1, item.quantity + delta);
           return { ...item, quantity: newQty };
         }
@@ -104,17 +107,17 @@ export const StoreProvider = ({ children }: PropsWithChildren<{}>) => {
   };
 
   // Order Actions
-  const placeOrder = (customerName: string): string => {
+  const placeOrder = (customer: CustomerInfo): string => {
     const newOrder: Order = {
       id: Date.now().toString(),
-      customerName,
+      customer,
       items: [...cart],
       totalAmount: cartFinalTotal,
       subtotal: cartSubtotal,
       discountAmount: cartDiscountAmount,
       discountPercent: cartDiscountPercent,
       date: new Date().toISOString(),
-      status: 'pending' // ALWAYS STARTS AS PENDING
+      status: 'pending' // ALWAYS PENDING
     };
 
     setOrders(prev => [newOrder, ...prev]);

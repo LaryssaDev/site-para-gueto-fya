@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { useStore } from '../context/StoreContext';
 import ProductCard from '../components/ProductCard';
-import { DISCOUNT_BANNER_URL } from '../constants';
+import { DISCOUNT_BANNER_URL, HERO_IMAGE_URL } from '../constants';
 import { CATEGORIES, Category } from '../types';
-import { Filter } from 'lucide-react';
 
 const Home = () => {
   const { products } = useStore();
@@ -17,15 +16,20 @@ const Home = () => {
     <div className="min-h-screen bg-brand-black pb-20">
       
       {/* Hero Section */}
-      <section className="relative h-[60vh] md:h-[70vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542202229-7d93c33f5d07?q=80&w=2072&auto=format&fit=crop')] bg-cover bg-center opacity-40 grayscale"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-black via-transparent to-black/60"></div>
+      <section className="relative h-[60vh] md:h-[80vh] flex items-center justify-center overflow-hidden">
+        {/* Specific Hero Image as requested */}
+        <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url('${HERO_IMAGE_URL}')` }}
+        ></div>
+        {/* Dark Overlay for readability */}
+        <div className="absolute inset-0 bg-black/60"></div>
         
         <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
           <h1 className="text-5xl md:text-8xl font-black text-white mb-6 tracking-tighter uppercase drop-shadow-2xl">
             Gueto <span className="text-brand-accent">FYA</span>
           </h1>
-          <p className="text-lg md:text-2xl text-gray-200 mb-8 font-medium tracking-wide max-w-2xl mx-auto">
+          <p className="text-lg md:text-2xl text-gray-200 mb-8 font-medium tracking-wide max-w-2xl mx-auto drop-shadow-lg">
             A rua é nossa passarela. Autenticidade, exclusividade e estilo urbano de verdade.
           </p>
           <a href="#produtos" className="inline-block bg-brand-accent hover:bg-yellow-400 text-black font-black py-4 px-10 rounded-none transform skew-x-[-10deg] transition-transform hover:-translate-y-1 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.2)]">
